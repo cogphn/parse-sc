@@ -31,7 +31,7 @@ fn main() -> Result<(), Error> {
 
     let mut mft_parser = mft::MftParser::from_path(_mftpath).unwrap();
 
-    let mut parser = ParserBuilder::from_path(_base_hive)
+    let parser = ParserBuilder::from_path(_base_hive)
         .recover_deleted(false)
         .with_transaction_log(_logfile1)
         .with_transaction_log(_logfile2)
@@ -39,7 +39,7 @@ fn main() -> Result<(), Error> {
     
     let mut iter = ParserIterator::new(&parser);
     
-    for (index, mut key) in iter.iter().enumerate() {
+    for (index, key) in iter.iter().enumerate() {
 
         let path = key.get_pretty_path();
         if path.contains("ObjectTable"){
@@ -72,20 +72,17 @@ fn main() -> Result<(), Error> {
                     let val = file_id.unwrap().detail;
                     let val_bytes = val.value_bytes().unwrap();
                     mftentryno = get_value_i32(val_bytes);
+                    let entryno_u16:u64 = mftentryno as u64;
+                    let entry = mft_parser.get_entry(entryno_u16);
+                    
+                    let fp = mft_parser.get_full_path_for_entry(&entry.unwrap()).unwrap();
 
-                    //let entry = mft_parser.get_entry(mftentryno);
-                    //println!("{:?}", entry);
-                    //let entry_path_1 = mft_parser.get_full_path_for_entry(&entry.unwrap());
-                    //println!("{:?}", entry_path_1);
+                    entry_filepath = match fp { 
+                        Some(val) => val.as_path().display().to_string(),
+                        None => "N/A".to_string()
+                    };
+                    
                 }
-                /*
-                if usn_journal_id != None {
-                    let val = usn_journal_id.unwrap().detail;
-                    let val_bytes = val.value_bytes().unwrap();
-                    usnjrnlid = get_value_i32(val_bytes);
-                }
-                */
-
                 println!("{},{},{},{}", keylastmod, mftentryno,entry_filepath,sha1);
 
             } 
