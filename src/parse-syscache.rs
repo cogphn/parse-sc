@@ -1,3 +1,9 @@
+//use std::path::Path;
+//use csv::Writer;
+use argparse::{ArgumentParser, Store};
+
+//use std::fs;
+
 use notatin::{
     err::Error,
     //cell_key_node::CellKeyNode,
@@ -23,13 +29,36 @@ fn get_value_i32(bytes:Vec<u8>) -> i32 {
 fn main() -> Result<(), Error> {
     println!("[>] Starting...");
 
-    let _base_hive = "C:\\progs\\dev\\parse-sc\\samples\\syscache\\01_Syscache.hve";
-    let _logfile1 = "C:\\progs\\dev\\parse-sc\\samples\\syscache\\01_Syscache.hve.LOG1";
-    let _logfile2 = "C:\\progs\\dev\\parse-sc\\samples\\syscache\\01_Syscache.hve.LOG2";
 
-    let _mftpath = "c:\\progs\\dev\\rust_regtest\\sample\\syscache\\mft_raw.export";
 
-    let mut mft_parser = mft::MftParser::from_path(_mftpath).unwrap();
+    let mut hive_path = "Syscache.hve".to_string();
+    let mut mft_path = "MFT.raw".to_string();
+    let mut output_path = "syscache_aprsed.csv".to_string();
+    {
+        let mut ap = ArgumentParser::new();
+        ap.set_description("syscache parser");
+        ap.refer(&mut output_path)
+            .add_option(&["-o", "--output"], Store, "output file name")
+            .required();
+        ap.refer(&mut hive_path)
+            .add_option(&["-h","--hive"], Store, "full path to syscache.hve")
+            .required();
+        ap.refer(&mut mft_path)
+            .add_option(&["-m","--mft"], Store, "full path to $MFT")
+            .required();
+        ap.parse_args_or_exit();
+    }
+
+    let _outfile_arg = format!("{output_path}");
+
+        
+    let _base_hive = hive_path;
+    let _logfile1 = format!("{}{}",_base_hive,".LOG1");
+    let _logfile2 = format!("{}{}",_base_hive,".LOG2");
+
+    //todo: more validation 
+
+    let mut mft_parser = mft::MftParser::from_path(mft_path).unwrap();
 
     let parser = ParserBuilder::from_path(_base_hive)
         .recover_deleted(false)
@@ -46,7 +75,7 @@ fn main() -> Result<(), Error> {
             if !path.contains("Indexes") {
                 let keylastmod = key.last_key_written_date_and_time();
                 
-                //let indexes_key = key.get_sub_key_by_path(&mut parser,"Indexes"); //doesn't work
+                //let indexes_key = key.get_sub_key_by_path(&mut parser,"Indexes"); //todo: figure out
                 //let indexesmod = indexes_key.last_key_written_date_and_time();
                 let ae_file_id = key.get_value("AeFileID"); //sha1
                 //let object_id = key.get_value("_ObjectId_");
@@ -55,18 +84,16 @@ fn main() -> Result<(), Error> {
                 //let usn_journal_id = key.get_value("_UsnJournalId_");
                 //let ae_program_id = key.get_value("AeProgramID");
 
-                
                 //some defaults
                 let mut sha1:std::string::String = "--none--".to_string();
                 let mut mftentryno:i32 = 0;
                 let mut entry_filepath = "".to_string();
-                //let mut usnjrnlid:i32 = -1;
 
                 //sha1
                 if ae_file_id != None{
                     let val = ae_file_id.unwrap().detail;
                     let val_bytes = val.value_bytes().unwrap();   
-                    sha1  = get_value_str(val_bytes);
+                    sha1  = get_value_str(val_bytes)[4..44].to_string();
                 }
                 if file_id != None{
                     let val = file_id.unwrap().detail;

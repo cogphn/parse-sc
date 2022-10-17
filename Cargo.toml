@@ -8,7 +8,9 @@ edition = "2021"
 [dependencies]
 mft = "0.6.0" 
 notatin = { git = "https://github.com/strozfriedberg/notatin" }
-
+string = "0.3.0"
+csv = "1.1.6"
+argparse = "0.2.2"
 
 [[bin]]
 name = "parse-sc"
@@ -17,3 +19,8 @@ path = "src/parse-sc.rs"
 [[bin]]
 name = "parse-mft"
 path = "src/parse-mft.rs"
+
+
+[[bin]]
+name = "parse-syscache"
+path = "src/parse-syscache.rs"
