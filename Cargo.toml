@@ -13,3 +13,7 @@ notatin = { git = "https://github.com/strozfriedberg/notatin" }
 [[bin]]
 name = "parse-sc"
 path = "src/parse-sc.rs"
+
+[[bin]]
+name = "parse-mft"
+path = "src/parse-mft.rs"

@@ -5,6 +5,8 @@ use notatin::{
     //parser::{Parser, ParserIterator}
     parser::{ParserIterator}
 };
+use mft;
+
 
 
 fn get_value_str(bytes:Vec<u8>) -> std::string::String  {
@@ -21,11 +23,15 @@ fn get_value_i32(bytes:Vec<u8>) -> i32 {
 fn main() -> Result<(), Error> {
     println!("[>] Starting...");
 
-    let _base_hive = "/home/examiner/dev/reg_sc/samples/06_Syscache.hve";
-    let _logfile1 = "/home/examiner/dev/reg_sc/samples/06_Syscache.hve.LOG1";
-    let _logfile2 = "/home/examiner/dev/reg_sc/samples/06_Syscache.hve.LOG2";
+    let _base_hive = "C:\\progs\\dev\\parse-sc\\samples\\syscache\\01_Syscache.hve";
+    let _logfile1 = "C:\\progs\\dev\\parse-sc\\samples\\syscache\\01_Syscache.hve.LOG1";
+    let _logfile2 = "C:\\progs\\dev\\parse-sc\\samples\\syscache\\01_Syscache.hve.LOG2";
 
-    let parser = ParserBuilder::from_path(_base_hive)
+    let _mftpath = "c:\\progs\\dev\\rust_regtest\\sample\\syscache\\mft_raw.export";
+
+    let mut mft_parser = mft::MftParser::from_path(_mftpath).unwrap();
+
+    let mut parser = ParserBuilder::from_path(_base_hive)
         .recover_deleted(false)
         .with_transaction_log(_logfile1)
         .with_transaction_log(_logfile2)
@@ -33,28 +39,32 @@ fn main() -> Result<(), Error> {
     
     let mut iter = ParserIterator::new(&parser);
     
-    for (index, key) in iter.iter().enumerate() {
+    for (index, mut key) in iter.iter().enumerate() {
 
         let path = key.get_pretty_path();
         if path.contains("ObjectTable"){
             if !path.contains("Indexes") {
-                let program_id = key.get_value("AeFileID");
-                let object_id = key.get_value("_ObjectId_");
-                let file_id = key.get_value("_FileId_");
-                let usn = key.get_value("_Usn_");
-                let usn_journal_id = key.get_value("_UsnJournalId_");
-                let ae_program_id = key.get_value("AeProgramID");
-
+                let keylastmod = key.last_key_written_date_and_time();
                 
+                //let indexes_key = key.get_sub_key_by_path(&mut parser,"Indexes"); //doesn't work
+                //let indexesmod = indexes_key.last_key_written_date_and_time();
+                let ae_file_id = key.get_value("AeFileID"); //sha1
+                //let object_id = key.get_value("_ObjectId_");
+                let file_id = key.get_value("_FileId_"); //mft entry no
+                //let usn = key.get_value("_Usn_");
+                //let usn_journal_id = key.get_value("_UsnJournalId_");
+                //let ae_program_id = key.get_value("AeProgramID");
+
                 
                 //some defaults
                 let mut sha1:std::string::String = "--none--".to_string();
                 let mut mftentryno:i32 = 0;
-                //let mut usnjrnlid = 0;
+                let mut entry_filepath = "".to_string();
+                //let mut usnjrnlid:i32 = -1;
 
                 //sha1
-                if program_id != None{
-                    let val = program_id.unwrap().detail;
+                if ae_file_id != None{
+                    let val = ae_file_id.unwrap().detail;
                     let val_bytes = val.value_bytes().unwrap();   
                     sha1  = get_value_str(val_bytes);
                 }
@@ -62,18 +72,21 @@ fn main() -> Result<(), Error> {
                     let val = file_id.unwrap().detail;
                     let val_bytes = val.value_bytes().unwrap();
                     mftentryno = get_value_i32(val_bytes);
+
+                    //let entry = mft_parser.get_entry(mftentryno);
+                    //println!("{:?}", entry);
+                    //let entry_path_1 = mft_parser.get_full_path_for_entry(&entry.unwrap());
+                    //println!("{:?}", entry_path_1);
                 }
+                /*
+                if usn_journal_id != None {
+                    let val = usn_journal_id.unwrap().detail;
+                    let val_bytes = val.value_bytes().unwrap();
+                    usnjrnlid = get_value_i32(val_bytes);
+                }
+                */
 
-                println!("{},{}", mftentryno,sha1);
-
-
-
-                
-                
-                
-
-
-
+                println!("{},{},{},{}", keylastmod, mftentryno,entry_filepath,sha1);
 
             } 
         }
