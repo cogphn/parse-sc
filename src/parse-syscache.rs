@@ -1,4 +1,4 @@
-//use std::path::Path;
+use std::path::Path;
 //use csv::Writer;
 use argparse::{ArgumentParser, Store};
 
@@ -7,6 +7,7 @@ use argparse::{ArgumentParser, Store};
 use notatin::{
     err::Error,
     //cell_key_node::CellKeyNode,
+    cli_util::parse_paths,
     parser_builder::{ ParserBuilder },
     //parser::{Parser, ParserIterator}
     parser::{ParserIterator}
@@ -41,7 +42,7 @@ fn main() -> Result<(), Error> {
             .add_option(&["-o", "--output"], Store, "output file name")
             .required();
         ap.refer(&mut hive_path)
-            .add_option(&["-h","--hive"], Store, "full path to syscache.hve")
+            .add_option(&["-h","--hive"], Store, "full path to syscache.hve and logs (hivename,log1,log2)")
             .required();
         ap.refer(&mut mft_path)
             .add_option(&["-m","--mft"], Store, "full path to $MFT")
@@ -51,32 +52,33 @@ fn main() -> Result<(), Error> {
 
     let _outfile_arg = format!("{output_path}");
 
-        
-    let _base_hive = hive_path;
-    let _logfile1 = format!("{}{}",_base_hive,".LOG1");
-    let _logfile2 = format!("{}{}",_base_hive,".LOG2");
-
-    //todo: more validation 
-
     let mut mft_parser = mft::MftParser::from_path(mft_path).unwrap();
-
-    let parser = ParserBuilder::from_path(_base_hive)
-        .recover_deleted(false)
-        .with_transaction_log(_logfile1)
-        .with_transaction_log(_logfile2)
-        .build()?;
     
+        
+    let (_base_hive,logfiles) = parse_paths(&hive_path);
+
+    let mut pb = ParserBuilder::from_path(_base_hive);
+
+    for log in logfiles.unwrap_or_default(){
+        pb.with_transaction_log(log);
+    }
+    let mut parser = pb.build()?;
+
     let mut iter = ParserIterator::new(&parser);
     
     for (_index, key) in iter.iter().enumerate() {
 
         let path = key.get_pretty_path();
         if path.contains("ObjectTable"){
-            if !path.contains("Indexes") {
+            if !path.contains("Indexes") { //this is wrong
                 let keylastmod = key.last_key_written_date_and_time();
                 
+                //todo: fix indexes modtime
+                //let pb1 = ParserBuilder::from_path(format!("{}",path)
                 //let indexes_key = key.get_sub_key_by_path(&mut parser,"Indexes"); //todo: figure out
                 //let indexesmod = indexes_key.last_key_written_date_and_time();
+
+
                 let ae_file_id = key.get_value("AeFileID"); //sha1
                 //let object_id = key.get_value("_ObjectId_");
                 let file_id = key.get_value("_FileId_"); //mft entry no
