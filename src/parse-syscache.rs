@@ -1,15 +1,10 @@
-use std::path::Path;
 //use csv::Writer;
 use argparse::{ArgumentParser, Store};
 
-//use std::fs;
-
 use notatin::{
     err::Error,
-    //cell_key_node::CellKeyNode,
     cli_util::parse_paths,
     parser_builder::{ ParserBuilder },
-    //parser::{Parser, ParserIterator}
     parser::{ParserIterator}
 };
 use mft;
@@ -62,7 +57,7 @@ fn main() -> Result<(), Error> {
     for log in logfiles.unwrap_or_default(){
         pb.with_transaction_log(log);
     }
-    let mut parser = pb.build()?;
+    let parser = pb.build()?;
 
     let mut iter = ParserIterator::new(&parser);
     
@@ -74,13 +69,9 @@ fn main() -> Result<(), Error> {
                 let keylastmod = key.last_key_written_date_and_time();
                 
                 //todo: fix indexes modtime
-                //let pb1 = ParserBuilder::from_path(format!("{}",path)
-                //let indexes_key = key.get_sub_key_by_path(&mut parser,"Indexes"); //todo: figure out
-                //let indexesmod = indexes_key.last_key_written_date_and_time();
-
 
                 let ae_file_id = key.get_value("AeFileID"); //sha1
-                //let object_id = key.get_value("_ObjectId_");
+
                 let file_id = key.get_value("_FileId_"); //mft entry no
                 //let usn = key.get_value("_Usn_");
                 //let usn_journal_id = key.get_value("_UsnJournalId_");
