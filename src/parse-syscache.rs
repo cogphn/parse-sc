@@ -1,5 +1,7 @@
-//use csv::Writer;
+extern crate csv;
+
 use argparse::{ArgumentParser, Store};
+use csv::Writer;
 
 use notatin::{
     err::Error,
@@ -61,6 +63,14 @@ fn main() -> Result<(), Error> {
 
     let mut iter = ParserIterator::new(&parser);
     
+
+    let mut writer = match Writer::from_path(output_path) {
+        Ok(w) => w,
+        Err(e) => panic!("Cannot open output file. Error: {}",e)
+    };
+
+
+
     for (_index, key) in iter.iter().enumerate() {
 
         let path = key.get_pretty_path();
@@ -103,13 +113,37 @@ fn main() -> Result<(), Error> {
                     };
                     
                 }
-                println!("{},{},{},{}", keylastmod, mftentryno,entry_filepath,sha1);
+                
+
+                let mut row = Vec::new();
+                row.push(keylastmod.to_string());
+                row.push(mftentryno.to_string());
+                row.push(entry_filepath);
+                row.push(sha1);
+
+                /*
+                let row = SCRow {
+                    key_last_mod: keylastmod.to_string(),
+                    entry_no : mftentryno,
+                    file_lookup: entry_filepath,
+                    sha1: sha1
+                };
+                */
+                match writer.write_record(row) {
+                    Ok(x) => x,
+                    Err(e) => println!("[!] error writing data: {}", e)
+                };
+
+                //println!("{},{},{},{}", keylastmod, mftentryno,entry_filepath,sha1);
 
             } 
         }
         
         
     }
+
+    
+
     
     
     println!("[.] Done.");
