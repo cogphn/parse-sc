@@ -72,7 +72,9 @@ fn main() -> Result<(), Error> {
     let mut header = Vec::new();
     header.push("reglastmod".to_string());
     header.push("mftentryno".to_string());
-    header.push("lookup".to_string());
+    header.push("usn".to_string());
+    header.push("usnjid".to_string());
+    header.push("mft_lookup".to_string());
     header.push("sha1".to_string());
 
     match writer.write_record(header) {
@@ -90,20 +92,23 @@ fn main() -> Result<(), Error> {
                 let ae_file_id = key.get_value("AeFileID"); //sha1
 
                 let file_id = key.get_value("_FileId_"); //mft entry no
-                //let usn = key.get_value("_Usn_");
-                //let usn_journal_id = key.get_value("_UsnJournalId_");
-                //let ae_program_id = key.get_value("AeProgramID");
-                
+                let hive_usn = key.get_value("_Usn_");
+                let hive_usn_journal_id = key.get_value("_UsnJournalId_");
+
                 //some defaults
                 let mut sha1:std::string::String = "--none--".to_string();
-                let mut mftentryno:i32 = 0;
+                let mut mftentryno:i32 = -1;
                 let mut entry_filepath = "".to_string();
+                let mut usn:i32 = -1;
+                let mut usnjid:i32 = -1;
 
                 //sha1
                 if ae_file_id != None{
                     let val = ae_file_id.unwrap().detail;
                     let val_bytes = val.value_bytes().unwrap();   
                     sha1  = get_value_str(val_bytes)[4..44].to_string();
+                }else{
+                    continue;
                 }
                 if file_id != None{
                     let val = file_id.unwrap().detail;
@@ -121,10 +126,24 @@ fn main() -> Result<(), Error> {
                     
                 }
                 
+                if hive_usn != None {
+                    let val = hive_usn.unwrap().detail;
+                    let val_bytes = val.value_bytes().unwrap();
+                    usn = get_value_i32(val_bytes);
+                }
+
+                if hive_usn_journal_id != None {
+                    let val = hive_usn_journal_id.unwrap().detail;
+                    let val_bytes = val.value_bytes().unwrap();
+                    usnjid = get_value_i32(val_bytes);
+                }
+                
 
                 let mut row = Vec::new();
                 row.push(keylastmod.to_string());
                 row.push(mftentryno.to_string());
+                row.push(usn.to_string());
+                row.push(usnjid.to_string());
                 row.push(entry_filepath);
                 row.push(sha1);
 
