@@ -69,7 +69,16 @@ fn main() -> Result<(), Error> {
         Err(e) => panic!("Cannot open output file. Error: {}",e)
     };
 
+    let mut header = Vec::new();
+    header.push("reglastmod".to_string());
+    header.push("mftentryno".to_string());
+    header.push("lookup".to_string());
+    header.push("sha1".to_string());
 
+    match writer.write_record(header) {
+        Ok(x) => x,
+        Err(e) => println!("[!] error writing data: {}", e)
+    };
 
     for (_index, key) in iter.iter().enumerate() {
 
@@ -77,8 +86,6 @@ fn main() -> Result<(), Error> {
         if path.contains("ObjectTable"){
             if !path.contains("Indexes") { //this is wrong
                 let keylastmod = key.last_key_written_date_and_time();
-                
-                //todo: fix indexes modtime
 
                 let ae_file_id = key.get_value("AeFileID"); //sha1
 
@@ -86,7 +93,7 @@ fn main() -> Result<(), Error> {
                 //let usn = key.get_value("_Usn_");
                 //let usn_journal_id = key.get_value("_UsnJournalId_");
                 //let ae_program_id = key.get_value("AeProgramID");
-
+                
                 //some defaults
                 let mut sha1:std::string::String = "--none--".to_string();
                 let mut mftentryno:i32 = 0;
@@ -121,14 +128,6 @@ fn main() -> Result<(), Error> {
                 row.push(entry_filepath);
                 row.push(sha1);
 
-                /*
-                let row = SCRow {
-                    key_last_mod: keylastmod.to_string(),
-                    entry_no : mftentryno,
-                    file_lookup: entry_filepath,
-                    sha1: sha1
-                };
-                */
                 match writer.write_record(row) {
                     Ok(x) => x,
                     Err(e) => println!("[!] error writing data: {}", e)
